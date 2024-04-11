@@ -5,6 +5,8 @@ package org.example;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Scanner;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -13,6 +15,34 @@ import com.sun.net.httpserver.HttpServer;
 
 public class TODOServer {
 
+    TODOList todos;
+
+    private static final String HTML_BODY_START = """
+            <!DOCTYPE html>
+            <html lang=\"en\">
+            <head>
+                <meta charset=\"UTF-8\">
+                <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+                <title>Add Task</title>
+            </head>
+            <body>
+            """;
+
+    private static final String CREATE_TASK_FORM = """
+            <h1>Add Task</h1>
+            <form method=\"post\" action=\"/todos\">
+                <label for=\"taskTitle\">Task Title:</label><br>
+                <input type=\"text\" id=\"taskTitle\" name=\"taskTitle\"><br>
+                <input type=\"submit\" value=\"Add Task\">
+            </form>
+            """;
+
+    private static final String HTML_BODY_END = """
+            </body>
+            </html>
+            """;
+
+
     public static void main(String[] args) {
         // create the server
         TODOServer server = new TODOServer();
@@ -20,9 +50,10 @@ public class TODOServer {
         server.startTODOListService();
     }
 
-    /**
-     * 
-     */
+    public TODOServer() {
+        todos = new TODOList();
+    }
+
     public void startTODOListService() {
         try {
             // create HTTP server
@@ -41,70 +72,71 @@ public class TODOServer {
     }
 
     public class TODOListHandler implements HttpHandler {
-
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                // get the todos page as html
+                String responseHtml = getTaskListPage();
 
-            //figure out which type of request needs to be handled
-            String requestMethod = exchange.getRequestMethod();
-
-            if(requestMethod.equalsIgnoreCase("GET")){
-                // handle the request coming in the /todo path
-                String body = "todo: 1, 2, 3";
-
-                // send the response headers
-                exchange.sendResponseHeaders(200, body.length());
-                // send the response body
-                exchange.getResponseBody().write(body.getBytes());
-            }
-            else if(requestMethod.equalsIgnoreCase("POST")){
-                
-                String body = """
-                    <!DOCTYPE html>
-                    <html lang=\"en\">
-                    <head>
-                        <meta charset=\"UTF-8\">
-                        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-                        <title>Add Task</title>
-                    </head>
-                    <body>
-                        <h1>Add Task</h1>
-                        <form method=\"post\" action=\"/todos\">
-                            <label for=\"taskTitle\">Task Title:</label><br>
-                            <input type=\"text\" id=\"taskTitle\" name=\"taskTitle\"><br>
-                            <input type=\"submit\" value=\"Add Task\">
-                        </form>
-
-                        """;
-
-                
-                //scan the user input
-                Scanner sc = new Scanner(exchange.getRequestBody());
-                String userInput;
-                if(sc.hasNext()){
-                    userInput = sc.next();
+                // send the response headers and body to the client
+                exchange.sendResponseHeaders(200, responseHtml.length());
+                exchange.getResponseBody().write(responseHtml.getBytes());
+            } else if (exchange.getRequestMethod().equalsIgnoreCase("POST")) { // create task
+                // scan the user input
+                String input = null;
+                try (Scanner scanner = new Scanner(exchange.getRequestBody(), StandardCharsets.UTF_8.name())) {
+                    input = scanner.useDelimiter("\\A").next();
+                    if (!input.isEmpty() && !input.isBlank()) {
+                        Task task = new Task(input, Task.Status.NOT_STARTED);
+                        todos.addTask(task);
+                    }
                 }
-                else{
-                    userInput = "";
-                }
-                body += "<p> Task created: " + userInput + "<p>\n";
-                sc.close();
-                
 
-                //close the remaining tags
-                body += """
-                        </body>
-                        </html>
-                        """;
-
-                exchange.sendResponseHeaders(200, body.length());
-                exchange.getResponseBody().write(body.getBytes());
-
+                // return the response
+                String responseHtml = getTaskListPage();
+                exchange.sendResponseHeaders(201, responseHtml.length());
+                exchange.getResponseBody().write(responseHtml.getBytes());
+            } else {
+                throw new UnsupportedOperationException("Unimplemented method 'handle'");
             }
-            
-
         }
-
     }
 
+    private String getTaskListPage() {
+        StringBuffer body = new StringBuffer();
+
+        // add the html and body start
+        body.append(HTML_BODY_START);
+
+        // add the tasks as a list
+        body.append(getTodosAsHtml(todos.getAll()));
+
+        // add the tasks form after the tasks list.
+        body.append("</hr");
+        body.append(CREATE_TASK_FORM);
+
+        // close the body and html
+        body.append(HTML_BODY_END);
+        return body.toString();
+    }
+
+    private String getTodosAsHtml(List<Task> todos) {
+        // if the task list is empty, just return a message
+        if (todos.isEmpty()) {
+            return "<p> Your task list is empty</p> </br>";
+        }
+
+        // we have tasks. let's return an HTLM list
+        StringBuffer sb = new StringBuffer();
+        sb.append("<ul>");
+        for (int i = 0; i < todos.size(); i++) {
+            Task task = todos.get(i);
+            sb.append("<li>");
+            sb.append(task.getStatus().toString());
+            sb.append(",");
+            sb.append(task.getTitle());
+            sb.append("</li>");
+        }
+        return sb.toString();
+    }
 }

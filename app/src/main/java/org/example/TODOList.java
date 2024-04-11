@@ -9,6 +9,10 @@ public class TODOList {
         tasks = new ArrayList<Task>();
     }
 
+    public List<Task> getAll(){
+        return tasks;
+    }
+
     public void addTask(Task t){
         tasks.add(t);
     }
@@ -37,6 +41,4 @@ public class TODOList {
         }
         return result;
     }
-
-    
 }
