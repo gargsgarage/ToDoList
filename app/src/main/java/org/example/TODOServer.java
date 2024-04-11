@@ -29,8 +29,7 @@ public class TODOServer {
             HttpServer httpServer = HttpServer.create();
             // set up a path to handle requests and call the handler
             // associated with it to generate the response
-            httpServer.createContext("/todo", new TODOListHandler());
-            httpServer.createContext("/addTask", new AddTaskHandler());
+            httpServer.createContext("/todos", new TODOListHandler());
             // tell the server to see what port to listen to
             httpServer.bind(new InetSocketAddress(8080), 0);
 
@@ -45,23 +44,22 @@ public class TODOServer {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            // handle the request coming in the /todo path
-            String body = "todo: 1, 2, 3";
 
-            // send the response headers
-            exchange.sendResponseHeaders(200, body.length());
-            // send the response body
-            exchange.getResponseBody().write(body.getBytes());
+            //figure out which type of request needs to be handled
+            String requestMethod = exchange.getRequestMethod();
 
-        }
+            if(requestMethod.equalsIgnoreCase("GET")){
+                // handle the request coming in the /todo path
+                String body = "todo: 1, 2, 3";
 
-    }
-
-    public class AddTaskHandler implements HttpHandler {
-
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            String body = """
+                // send the response headers
+                exchange.sendResponseHeaders(200, body.length());
+                // send the response body
+                exchange.getResponseBody().write(body.getBytes());
+            }
+            else if(requestMethod.equalsIgnoreCase("POST")){
+                
+                String body = """
                     <!DOCTYPE html>
                     <html lang=\"en\">
                     <head>
@@ -71,7 +69,7 @@ public class TODOServer {
                     </head>
                     <body>
                         <h1>Add Task</h1>
-                        <form method=\"post\" action=\"/addTask\">
+                        <form method=\"post\" action=\"/todos\">
                             <label for=\"taskTitle\">Task Title:</label><br>
                             <input type=\"text\" id=\"taskTitle\" name=\"taskTitle\"><br>
                             <input type=\"submit\" value=\"Add Task\">
@@ -79,8 +77,7 @@ public class TODOServer {
 
                         """;
 
-            // if there is a post request
-            if ("POST".equals(exchange.getRequestMethod())) {
+                
                 //scan the user input
                 Scanner sc = new Scanner(exchange.getRequestBody());
                 String userInput;
@@ -92,16 +89,19 @@ public class TODOServer {
                 }
                 body += "<p> Task created: " + userInput + "<p>\n";
                 sc.close();
+                
+
+                //close the remaining tags
+                body += """
+                        </body>
+                        </html>
+                        """;
+
+                exchange.sendResponseHeaders(200, body.length());
+                exchange.getResponseBody().write(body.getBytes());
+
             }
-
-            //close the remaining tags
-            body += """
-                    </body>
-                    </html>
-                    """;
-
-            exchange.sendResponseHeaders(200, body.length());
-            exchange.getResponseBody().write(body.getBytes());
+            
 
         }
 
