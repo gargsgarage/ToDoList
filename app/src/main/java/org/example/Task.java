@@ -3,21 +3,21 @@ package org.example;
 public class Task {
     private String title;
     private String description;
-    private status status;
-    private enum status{
+    private Status status;
+    public enum Status{
         NOT_STARTED,
         IN_PROGRESS,
         COMPLETE;
     }
     
 
-    public Task(String title, String description, status status){
+    public Task(String title, String description, Status status){
         this.title = title;
         this.description = description;
         this.status = status;
     }
 
-    public Task(String title, status status){
+    public Task(String title, Status status){
         this.title = title;
         this.status = status;
     }
@@ -30,7 +30,7 @@ public class Task {
         return description;
     }
 
-    public status getStatus(){
+    public Status getStatus(){
         return status;
     }
 
@@ -42,7 +42,7 @@ public class Task {
         description = d;
     }
 
-    public void setStatus(status s){
+    public void setStatus(Status s){
         status = s;
     }
 

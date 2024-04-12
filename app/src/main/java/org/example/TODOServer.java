@@ -13,6 +13,46 @@ import com.sun.net.httpserver.HttpServer;
 
 public class TODOServer {
 
+    TODOList todos;
+
+    //need to do:
+    /*
+     * 1. have the html header
+     * 2. have the task list
+     *      2.1 if the task list is empty then print that else print all of the tasks
+     * 3.print the form
+     * 4.pring the end
+    */
+
+    private final String HTML_HEADER = """
+            <!DOCTYPE html>
+            <html lang=\"en\">
+            <head>
+                <meta charset=\"UTF-8\">
+                <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+                <title>Add Task</title>
+            </head>
+            <body>
+            """;
+
+    private final String HTML_FORM = """ 
+            <h1>Add Task</h1>
+            <form method=\"post\" action=\"/todos\">
+                <label for=\"taskTitle\">Task Title:</label><br>
+                <input type=\"text\" id=\"taskTitle\" name=\"taskTitle\"><br>
+                <input type=\"submit\" value=\"Add Task\">
+            </form>
+            """;
+
+    private final String HTML_END = """
+        </body>
+        </html>
+        """;
+
+    public TODOServer() {
+        todos = new TODOList();
+    }
+
     public static void main(String[] args) {
         // create the server
         TODOServer server = new TODOServer();
@@ -20,9 +60,7 @@ public class TODOServer {
         server.startTODOListService();
     }
 
-    /**
-     * 
-     */
+
     public void startTODOListService() {
         try {
             // create HTTP server
@@ -40,68 +78,80 @@ public class TODOServer {
 
     }
 
+    public String getPageHtml(){
+
+        StringBuffer output = new StringBuffer();
+        output.append(HTML_HEADER);
+        output.append(getTodosAsHtml());
+        output.append("</br>");
+        output.append(HTML_FORM);
+        output.append(HTML_END);
+
+        return output.toString();
+    }
+
+    public String getTodosAsHtml(){
+        StringBuffer output = new StringBuffer();
+        if(todos.isEmpty()){
+            output.append("<p>list is empty</p></br>");
+        }
+        else{
+            output.append("<ul>");
+            for(int i = 0; i < todos.size(); i++){
+                Task task = todos.getTask(i);
+                output.append("<li>");
+                output.append(task.toString());
+                output.append("</li>");
+            }
+        }
+        
+        output.append("</ul>");
+        return output.toString();
+    }
+
     public class TODOListHandler implements HttpHandler {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
 
-            //figure out which type of request needs to be handled
+            // figure out which type of request needs to be handled
             String requestMethod = exchange.getRequestMethod();
-
-            if(requestMethod.equalsIgnoreCase("GET")){
-                // handle the request coming in the /todo path
-                String body = "todo: 1, 2, 3";
-
-                // send the response headers
-                exchange.sendResponseHeaders(200, body.length());
-                // send the response body
-                exchange.getResponseBody().write(body.getBytes());
-            }
-            else if(requestMethod.equalsIgnoreCase("POST")){
                 
-                String body = """
-                    <!DOCTYPE html>
-                    <html lang=\"en\">
-                    <head>
-                        <meta charset=\"UTF-8\">
-                        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-                        <title>Add Task</title>
-                    </head>
-                    <body>
-                        <h1>Add Task</h1>
-                        <form method=\"post\" action=\"/todos\">
-                            <label for=\"taskTitle\">Task Title:</label><br>
-                            <input type=\"text\" id=\"taskTitle\" name=\"taskTitle\"><br>
-                            <input type=\"submit\" value=\"Add Task\">
-                        </form>
+            //check if request method is post (dont need to check for get
+            //request because get request will just execute the code at the bottom
+            //anyways)
+            //if a post request, then just need to add user inputed task to the tasklist
+            if (requestMethod.equalsIgnoreCase("POST")) {
 
-                        """;
-
-                
-                //scan the user input
+                // scan the user input
                 Scanner sc = new Scanner(exchange.getRequestBody());
                 String userInput;
-                if(sc.hasNext()){
-                    userInput = sc.next();
-                }
-                else{
+                if (sc.hasNext()) {
+                    userInput = sc.useDelimiter("\\A").next();
+                } else {
                     userInput = "";
                 }
-                body += "<p> Task created: " + userInput + "<p>\n";
                 sc.close();
                 
-
-                //close the remaining tags
-                body += """
-                        </body>
-                        </html>
-                        """;
-
-                exchange.sendResponseHeaders(200, body.length());
-                exchange.getResponseBody().write(body.getBytes());
-
+                if(!userInput.isEmpty()){
+                    Task t = new Task(userInput, Task.Status.NOT_STARTED);
+                    todos.addTask(t);
+                }
+                
             }
-            
+            //get the html for the handled request
+            String body = getPageHtml();
+
+            //make sure the response code is right based on the type of request made
+            int rCode = 200;
+            if(requestMethod.equalsIgnoreCase("POST")){
+                rCode++;
+            }
+
+            // send the response headers
+            exchange.sendResponseHeaders(rCode, body.length());
+            // send the response body
+            exchange.getResponseBody().write(body.getBytes());
 
         }
 

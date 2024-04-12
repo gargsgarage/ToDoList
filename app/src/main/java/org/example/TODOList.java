@@ -30,6 +30,14 @@ public class TODOList {
         return null;
     }
 
+    public Task getTask(int index){
+        return tasks.get(index);
+    }
+
+    public List<Task> getAllTasks(){
+        return tasks;
+    }
+
     public String toString(){
         String result = "";
         for(int i = 0; i < tasks.size();i++){
@@ -38,5 +46,15 @@ public class TODOList {
         return result;
     }
 
+    public boolean isEmpty(){
+        if(tasks.size() == 0){
+            return true;
+        }
+        return false;
+    }
+
+    public int size(){
+        return tasks.size();
+    }
     
 }
