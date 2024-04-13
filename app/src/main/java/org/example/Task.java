@@ -22,6 +22,11 @@ public class Task {
         this.status = status;
     }
 
+    public Task(String title){
+        this.title = title;
+        status = Status.NOT_STARTED;
+    }
+
     public String getTitle(){
         return title;
     }

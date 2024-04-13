@@ -56,5 +56,14 @@ public class TODOList {
     public int size(){
         return tasks.size();
     }
+
+    //returns task id (0 thru tasks.size() - 1)
+    public int getTaskID(Task t){
+        int i = 0;
+        while(t.compareTo(tasks.get(i)) != 0){
+            i++;
+        }
+        return i;
+    }
     
 }
