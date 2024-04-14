@@ -3,13 +3,12 @@
  */
 package org.example;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -20,15 +19,6 @@ import com.sun.net.httpserver.HttpServer;
 public class TODOServer {
 
     TODOList todos;
-
-    // need to do:
-    /*
-     * 1. have the html header
-     * 2. have the task list
-     * 2.1 if the task list is empty then print that else print all of the tasks
-     * 3.print the form
-     * 4.pring the end
-     */
 
     private final String HTML_ADD_TASK_HEADER = """
             <!DOCTYPE html>
@@ -50,35 +40,29 @@ public class TODOServer {
                 <title>Update Task</title>
             </head>
             <body>
-                """;
+            """;
 
     private final String HTML_ADD_TASK_FORM = """
             <h1>Add Task</h1>
-            <form method=\"post\" action=\"/todos\">
-                <label for=\"taskTitle\">Task Title:</label><br>
-                <input type=\"text\" id=\"taskTitle\" name=\"taskTitle\"><br>
-                <input type=\"submit\" value=\"Add Task\">
+            <form method="post" action="/todos">
+                <label for="taskTitle">Task Title:</label><br>
+                <input type="text" id="taskTitle" name="taskTitle" /><br>
+                <input type="submit" value="Add Task" />
             </form>
             """;
 
-    private final String HTML_UPDATE_TITLE_FORM = """
+    private final String HTML_UPDATE_TASK_FORM = """
             <h1>Update Task Title</h1>
             <form method="post" action="/todos/update">
-                <input type="hidden" name="id" value="%d">
+                <input type="hidden" name="id" value="%d" />
                 <label for="taskTitle">New Task Title:</label><br>
-                <input type="text" id="taskTitle" name="taskTitle"><br>
-                <input type="submit" value="Update Title">
-            </form>
-            """;
+                <input type="text" id="taskTitle" name="taskTitle" value="%s" /><br>
 
-    private final String HTML_UPDATE_STATUS_FORM = """
-            <h1>Update Task Status</h1>
-            <form method="post" action="/todos/update">
-                <input type="hidden" name="id" value="taskId">
                 <label><input type="radio" name="status" value="NOT_STARTED"> Not Started</label><br>
                 <label><input type="radio" name="status" value="IN_PROGRESS"> In Progress</label><br>
                 <label><input type="radio" name="status" value="COMPLETED"> Completed</label><br>
-                <input type="submit" value="Update Task">
+
+                <input type="submit" value="Update Title" />
             </form>
             """;
 
@@ -98,6 +82,7 @@ public class TODOServer {
         server.startTODOListService();
     }
 
+    //starts up the todo service
     public void startTODOListService() {
         try {
             // create HTTP server
@@ -116,6 +101,7 @@ public class TODOServer {
 
     }
 
+    //gets all of the html for the /todos page into one string 
     public String getTodosPageHtml() {
 
         StringBuffer output = new StringBuffer();
@@ -128,19 +114,27 @@ public class TODOServer {
         return output.toString();
     }
 
+    //gets the html for writing out the list of task needed to do
     public String getTodosAsHtml() {
         StringBuffer output = new StringBuffer();
+        //if there are no tasks to print, print list is empty
         if (todos.isEmpty()) {
             output.append("<p>list is empty</p></br>");
-        } else {
+        }
+        //else loop through todos and print each task in the list
+        else {
             output.append("<ul>");
             for (int i = 0; i < todos.size(); i++) {
                 Task task = todos.getTask(i);
                 int taskID = todos.getTaskID(task);
+
                 output.append("<li>");
+
+                //print each task as a link (which will be used to update the task)
                 output.append("<a href=\"/todos/update?id=").append(taskID).append("\">");
                 output.append(task.toString());
                 output.append("</a>");
+
                 output.append("</li>");
             }
             output.append("</ul>");
@@ -149,17 +143,55 @@ public class TODOServer {
         return output.toString();
     }
 
-    public String getUpdatePageHtml(){
+    //gets all of the html for the /todos/update page into one string 
+    // (params allow previous params to be apart of the page)
+    // ex. if the title is currently hello, update will show:
+    // update Title: hello, and then you can edit that
+    public String getUpdatePageHtml(int id, String title) {
         StringBuffer output = new StringBuffer();
         output.append(HTML_UPDATE_TASK_HEADER);
         output.append("</br>");
-        output.append(HTML_UPDATE_TITLE_FORM);
-        output.append(HTML_UPDATE_STATUS_FORM);
+        output.append(String.format(HTML_UPDATE_TASK_FORM, id, title));
         output.append(HTML_END);
 
         return output.toString();
     }
 
+
+    //parses through the input stream to create key-->value pairs for each of the fields of a task
+    private Map<String, String> getFormParams(InputStream inputStream) {
+
+        // first get the request body, which is the user's input
+        // still need to split and decode the body
+        Scanner sc = new Scanner(inputStream);
+        String requestBody;
+
+        if (sc.hasNext()) {
+            requestBody = sc.useDelimiter("\\A").next();
+        } else {
+            requestBody = "";
+        }
+        sc.close();
+
+        // split and decode the pairs
+        // (ex current requestBody: id=0&taskTitle=say+hello&status=IN_PROGRESS)
+        String[] pairs = requestBody.toString().split("&");
+        Map<String, String> params = new HashMap<>();
+        for (String pair : pairs) {
+            String[] keyValue = pair.split("=");
+            if (keyValue.length == 2) {
+                params.put(URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8),
+                        URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8));
+            }
+        }
+        // after splitting and decoding, params Map looks like this:
+        // params: id-->0, taskTitle-->say hello, status--> IN_PROGRESS
+
+        return params;
+
+    }
+
+    //handler for /todos
     public class TODOListHandler implements HttpHandler {
 
         @Override
@@ -175,17 +207,11 @@ public class TODOServer {
             if (requestMethod.equalsIgnoreCase("POST")) {
 
                 // scan the user input
-                Scanner sc = new Scanner(exchange.getRequestBody());
-                String userInput;
-                if (sc.hasNext()) {
-                    userInput = sc.useDelimiter("\\A").next();
-                } else {
-                    userInput = "";
-                }
-                sc.close();
+                Map<String, String> params = getFormParams(exchange.getRequestBody());
+                String title = params.get("taskTitle");
 
-                if (!userInput.isEmpty()) {
-                    Task t = new Task(userInput, Task.Status.NOT_STARTED);
+                if (!title.isEmpty()) {
+                    Task t = new Task(title, Task.Status.NOT_STARTED);
                     todos.addTask(t);
                 }
 
@@ -208,99 +234,85 @@ public class TODOServer {
 
     }
 
+    //handler for /todos/update
     public class UpdateListHandler implements HttpHandler {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            // Todo:
-            /*
-             * 1. make the each of the tasks on the task list page links
-             * 2. each link will go to this new path ("/todos/update#" + id) where there
-             * will be forms for:
-             * 2.1 drop-down menu for selecting status
-             * 2.2 entering new title for the task
-             * 2.3 submit button that takes you back to the task list page with
-             * the updated task
-             * 
-             */
 
-            if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-                // Extract the task ID from the query parameter
+            // if get request, then return the update page
+            if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+
+                // extract the id from the query
                 String query = exchange.getRequestURI().getQuery();
-                int taskID = -1;
-                if (query != null && query.startsWith("id=")) {
-                    // will get the id in the form of a string from the query
-                    String taskIDStr = query.substring(3);
-                    try {
-                        taskID = Integer.parseInt(taskIDStr);
-                    } catch (NumberFormatException e) {
-                        e.printStackTrace();
-                    }
+                int taskID = extractID(query);
+
+                // if task not found, return
+                if (taskID < 0) {
+                    exchange.sendResponseHeaders(404, 0);
+                    return;
                 }
 
-                if (taskID != -1) {
-                    // get the specific task that needs to be updated
-                    // use scanner to see user input
-                    // update the task title to the user input
-                    // if empty then leave the same
-                    // work on dropdown menu
-                    // submit button takes you back
+                // get the task using the taskID
+                Task task = todos.getTask(taskID);
 
-                    Task task = todos.getTask(taskID);
+                // get the body of the response
+                String body = getUpdatePageHtml(taskID, task.getTitle());
 
-                    // this block updates the task title
-                    Scanner sc = new Scanner(exchange.getRequestBody());
-                    String userInput;
-                    if (sc.hasNext()) {
-                        userInput = sc.useDelimiter("\\A").next();
-                    } else {
-                        userInput = "";
-                    }
-                    sc.close();
-
-                    if (!userInput.isBlank()) {
-                        task.setTitle(userInput);
-                    }
-
-                    // Parse the request body to extract the selected status option
-                    //(dont know what any of this means but figure out later)
-                    InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
-                    BufferedReader br = new BufferedReader(isr);
-                    StringBuilder requestBody = new StringBuilder();
-                    String line;
-                    while ((line = br.readLine()) != null) {
-                        requestBody.append(line);
-                    }
-                    br.close();
-
-                    String selectedStatus = null;
-                    String[] pairs = requestBody.toString().split("&");
-                    for (String pair : pairs) {
-                        String[] keyValue = pair.split("=");
-                        if (keyValue.length == 2 && keyValue[0].equals("status")) {
-                            selectedStatus = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
-                            break;
-                        }
-                    }
-
-                    // Update the task status based on the selected status option
-                    if (selectedStatus != null) {
-                        try {
-                            Task.Status newStatus = Task.Status.valueOf(selectedStatus);
-                            task.setStatus(newStatus);
-                        } catch (IllegalArgumentException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-
-                //as of now, does not go back to /todos, will implement when path works correctly
-                String body = getUpdatePageHtml();
-                exchange.sendResponseHeaders(302, body.length()); // 302 Found redirect status code
+                exchange.sendResponseHeaders(200, body.length());
                 exchange.getResponseBody().write(body.getBytes());
+
+                return;
+            }
+            //if POST request, then update the fields of task with id = taskID, redirect to /todos
+            else if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                // Extract the task ID from the input stream
+                Map<String, String> params = getFormParams(exchange.getRequestBody());
+                int taskID = -1;
+                try {
+                    taskID = Integer.parseInt(params.get("id"));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                // if task not found, return
+                if (taskID < 0) {
+                    exchange.sendResponseHeaders(404, 0);
+                    return;
+                }
+
+                // get a reference to the correct task using taskID
+                Task task = todos.getTask(taskID);
+
+                // update task title
+                task.setTitle(params.get("taskTitle"));
+
+                // update status
+                Task.Status newStatus = Task.Status.valueOf(params.get("status"));
+                task.setStatus(newStatus);
+
+                // send redirect to /todos
+                exchange.getResponseHeaders().set("Location", "/todos");
+                exchange.sendResponseHeaders(302, -1); // 302 Found redirect status code
 
             }
         }
+
+        //extracts the id of the task from the query
+        public int extractID(String query) {
+            int taskID = -1;
+            if (query != null && query.startsWith("id=")) {
+                // will get the id in the form of a string from the query
+                String taskIDStr = query.substring(3);
+                try {
+                    taskID = Integer.parseInt(taskIDStr);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+            return taskID;
+        }
+
     }
 
 }
