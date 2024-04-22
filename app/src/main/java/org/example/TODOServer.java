@@ -62,7 +62,10 @@ public class TODOServer {
                 <label><input type="radio" name="status" value="IN_PROGRESS"> In Progress</label><br>
                 <label><input type="radio" name="status" value="COMPLETED"> Completed</label><br>
 
-                <input type="submit" value="Update Title" />
+                <input type="submit" value="Update Title" /><br>
+
+                <input type="hidden" name="rqmethod" value="delete">
+                <input type="submit" value="Delete Task" />
             </form>
             """;
 
@@ -82,7 +85,7 @@ public class TODOServer {
         server.startTODOListService();
     }
 
-    //starts up the todo service
+    // starts up the todo service
     public void startTODOListService() {
         try {
             // create HTTP server
@@ -101,7 +104,7 @@ public class TODOServer {
 
     }
 
-    //gets all of the html for the /todos page into one string 
+    // gets all of the html for the /todos page into one string
     public String getTodosPageHtml() {
 
         StringBuffer output = new StringBuffer();
@@ -114,14 +117,14 @@ public class TODOServer {
         return output.toString();
     }
 
-    //gets the html for writing out the list of task needed to do
+    // gets the html for writing out the list of task needed to do
     public String getTodosAsHtml() {
         StringBuffer output = new StringBuffer();
-        //if there are no tasks to print, print list is empty
+        // if there are no tasks to print, print list is empty
         if (todos.isEmpty()) {
             output.append("<p>list is empty</p></br>");
         }
-        //else loop through todos and print each task in the list
+        // else loop through todos and print each task in the list
         else {
             output.append("<ul>");
             for (int i = 0; i < todos.size(); i++) {
@@ -130,7 +133,7 @@ public class TODOServer {
 
                 output.append("<li>");
 
-                //print each task as a link (which will be used to update the task)
+                // print each task as a link (which will be used to update the task)
                 output.append("<a href=\"/todos/update?id=").append(taskID).append("\">");
                 output.append(task.toString());
                 output.append("</a>");
@@ -143,7 +146,7 @@ public class TODOServer {
         return output.toString();
     }
 
-    //gets all of the html for the /todos/update page into one string 
+    // gets all of the html for the /todos/update page into one string
     // (params allow previous params to be apart of the page)
     // ex. if the title is currently hello, update will show:
     // update Title: hello, and then you can edit that
@@ -157,8 +160,8 @@ public class TODOServer {
         return output.toString();
     }
 
-
-    //parses through the input stream to create key-->value pairs for each of the fields of a task
+    // parses through the input stream to create key-->value pairs for each of the
+    // fields of a task
     private Map<String, String> getFormParams(InputStream inputStream) {
 
         // first get the request body, which is the user's input
@@ -191,7 +194,7 @@ public class TODOServer {
 
     }
 
-    //handler for /todos
+    // handler for /todos
     public class TODOListHandler implements HttpHandler {
 
         @Override
@@ -234,7 +237,7 @@ public class TODOServer {
 
     }
 
-    //handler for /todos/update
+    // handler for /todos/update
     public class UpdateListHandler implements HttpHandler {
 
         @Override
@@ -264,7 +267,8 @@ public class TODOServer {
 
                 return;
             }
-            //if POST request, then update the fields of task with id = taskID, redirect to /todos
+            // if POST request, then update the fields of task with id = taskID, redirect to
+            // /todos
             else if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
                 // Extract the task ID from the input stream
                 Map<String, String> params = getFormParams(exchange.getRequestBody());
@@ -284,12 +288,22 @@ public class TODOServer {
                 // get a reference to the correct task using taskID
                 Task task = todos.getTask(taskID);
 
-                // update task title
-                task.setTitle(params.get("taskTitle"));
+                //since html forms typically only handles PUT and POST requests,
+                // to make delete button work, we must override a post request
+                // --> done by having form also have input type(rqmethod) param
+                String requestMethod = params.get("rqmethod");
+                if (requestMethod.isBlank() && !requestMethod.equalsIgnoreCase("DELETE")) {
+                    //otherwise this request was a normal POST request to update the task
+                    // update task title
+                    task.setTitle(params.get("taskTitle"));
 
-                // update status
-                Task.Status newStatus = Task.Status.valueOf(params.get("status"));
-                task.setStatus(newStatus);
+                    // update status
+                    Task.Status newStatus = Task.Status.valueOf(params.get("status"));
+                    task.setStatus(newStatus);
+                } else {
+
+                    todos.removeTask(task);
+                }
 
                 // send redirect to /todos
                 exchange.getResponseHeaders().set("Location", "/todos");
@@ -298,7 +312,7 @@ public class TODOServer {
             }
         }
 
-        //extracts the id of the task from the query
+        // extracts the id of the task from the query
         public int extractID(String query) {
             int taskID = -1;
             if (query != null && query.startsWith("id=")) {
