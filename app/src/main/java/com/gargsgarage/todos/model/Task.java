@@ -1,4 +1,4 @@
-package org.example;
+package com.gargsgarage.todos.model;
 
 public class Task {
     private String title;
@@ -10,7 +10,6 @@ public class Task {
         COMPLETED;
     }
     
-
     public Task(String title, String description, Status status){
         this.title = title;
         this.description = description;

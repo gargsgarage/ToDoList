@@ -1,4 +1,4 @@
-package org.example;
+package com.gargsgarage.todos.model;
 
 import java.util.*;
 
