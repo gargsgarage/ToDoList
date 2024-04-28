@@ -62,10 +62,8 @@ public class TODOServer {
                 <label><input type="radio" name="status" value="IN_PROGRESS"> In Progress</label><br>
                 <label><input type="radio" name="status" value="COMPLETED"> Completed</label><br>
 
-                <input type="submit" value="Update Title" /><br>
-
-                <input type="hidden" name="rqmethod" value="delete">
-                <input type="submit" value="Delete Task" />
+                <input type="submit" name="action" value="Update Title" /><br>
+                <input type="submit" name="action" value="Delete Task" />
             </form>
             """;
 
@@ -291,8 +289,8 @@ public class TODOServer {
                 //since html forms typically only handles PUT and POST requests,
                 // to make delete button work, we must override a post request
                 // --> done by having form also have input type(rqmethod) param
-                String requestMethod = params.get("rqmethod");
-                if (requestMethod.isBlank() && !requestMethod.equalsIgnoreCase("DELETE")) {
+                String requestMethod = params.get("action");
+                if (!requestMethod.isBlank() && !requestMethod.equalsIgnoreCase("Delete Task")) {
                     //otherwise this request was a normal POST request to update the task
                     // update task title
                     task.setTitle(params.get("taskTitle"));
@@ -301,7 +299,6 @@ public class TODOServer {
                     Task.Status newStatus = Task.Status.valueOf(params.get("status"));
                     task.setStatus(newStatus);
                 } else {
-
                     todos.removeTask(task);
                 }
 
