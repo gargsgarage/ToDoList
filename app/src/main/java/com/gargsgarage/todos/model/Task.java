@@ -1,4 +1,4 @@
-package org.example;
+package com.gargsgarage.todos.model;
 
 public class Task {
     private String title;
