@@ -3,7 +3,7 @@ package com.gargsgarage.todos.handlers;
 import java.io.IOException;
 import java.util.Map;
 
-import com.gargsgarage.todos.model.TODOList;
+import com.gargsgarage.todos.model.TodoDB;
 import com.gargsgarage.todos.model.Task;
 import com.gargsgarage.todos.utils.RequestUtils;
 import com.gargsgarage.todos.view.TodoListView;
@@ -16,12 +16,12 @@ public class UpdateTaskHandler implements HttpHandler {
     /**
      *
      */
-    private final TODOList todos;
+    private final TodoDB todos;
 
     /**
      * @param todos
      */
-    public UpdateTaskHandler(TODOList todos) {
+    public UpdateTaskHandler(TodoDB todos) {
         this.todos = todos;
     }
 
@@ -45,7 +45,7 @@ public class UpdateTaskHandler implements HttpHandler {
             Task task = todos.getTask(taskID);
 
             // get the body of the response
-            String body = TodoListView.getUpdatePageHtml(taskID, task.getTitle());
+            String body = TodoListView.getUpdatePageHtml(task);
 
             exchange.sendResponseHeaders(200, body.length());
             exchange.getResponseBody().write(body.getBytes());
@@ -80,11 +80,11 @@ public class UpdateTaskHandler implements HttpHandler {
             if (!requestMethod.isBlank() && !requestMethod.equalsIgnoreCase("Delete Task")) {
                 //otherwise this request was a normal POST request to update the task
                 // update task title
-                task.setTitle(params.get("taskTitle"));
+                todos.updateTaskName(taskID, params.get("taskTitle"));
 
                 // update status
-                Task.Status newStatus = Task.Status.valueOf(params.get("status"));
-                task.setStatus(newStatus);
+                String newStatus = params.get("status");
+                todos.updateTaskStatus(taskID, newStatus);
             } else {
 
                 todos.removeTask(task);

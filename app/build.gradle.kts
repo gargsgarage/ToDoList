@@ -19,6 +19,8 @@ repositories {
 dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
+
+    implementation("org.postgresql:postgresql:42.7.3")
 }
 
 testing {
@@ -40,5 +42,5 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "org.example.App"
+    mainClass = "com.gargsgarage.todos.TODOServer"
 }

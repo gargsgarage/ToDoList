@@ -6,15 +6,15 @@ package com.gargsgarage.todos;
 import java.net.InetSocketAddress;
 import com.gargsgarage.todos.handlers.CreateTaskHandler;
 import com.gargsgarage.todos.handlers.UpdateTaskHandler;
-import com.gargsgarage.todos.model.TODOList;
+import com.gargsgarage.todos.model.TodoDB;
 import com.sun.net.httpserver.HttpServer;
 
 public class TODOServer {
 
-    TODOList todos;
+    TodoDB todos;
 
     public TODOServer() {
-        todos = new TODOList();
+        todos = new TodoDB();
     }
 
     public static void main(String[] args) {

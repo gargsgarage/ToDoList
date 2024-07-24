@@ -1,6 +1,6 @@
 package com.gargsgarage.todos.view;
 
-import com.gargsgarage.todos.model.TODOList;
+import com.gargsgarage.todos.model.TodoDB;
 import com.gargsgarage.todos.model.Task;
 
 public class TodoListView {
@@ -43,22 +43,21 @@ public class TodoListView {
                 <label for="taskTitle">New Task Title:</label><br>
                 <input type="text" id="taskTitle" name="taskTitle" value="%s" /><br>
 
-                <label><input type="radio" name="status" value="NOT_STARTED"> Not Started</label><br>
-                <label><input type="radio" name="status" value="IN_PROGRESS"> In Progress</label><br>
-                <label><input type="radio" name="status" value="COMPLETED"> Completed</label><br>
+            """;
 
-                <input type="submit" name="action" value="Update Title" /><br>
+    private static final String HTML_UPDATE_BUTTONS = """
+                <input type="submit" name="action" value="Update Task" /><br>
                 <input type="submit" name="action" value="Delete Task" />
             </form>
             """;
-
+    
     private static final String HTML_END = """
             </body>
             </html>
             """;
 
     // gets all of the html for the /todos page into one string
-    public static String getTodosPageHtml(TODOList todos) {
+    public static String getTodosPageHtml(TodoDB todos) {
 
         StringBuffer output = new StringBuffer();
         output.append(HTML_ADD_TASK_HEADER);
@@ -71,18 +70,17 @@ public class TodoListView {
     }
 
     // gets the html for writing out the list of task needed to do
-    public static String getTodosAsHtml(TODOList todos) {
+    public static String getTodosAsHtml(TodoDB todos) {
         StringBuffer output = new StringBuffer();
         // if there are no tasks to print, print list is empty
-        if (todos.isEmpty()) {
+        if (todos.getNumTasks() == 0) {
             output.append("<p>list is empty</p></br>");
         }
         // else loop through todos and print each task in the list
         else {
             output.append("<ul>");
-            for (int i = 0; i < todos.size(); i++) {
-                Task task = todos.getTask(i);
-                int taskID = todos.getTaskID(task);
+            for (Task task:todos.getAllTasks()) {
+                int taskID = task.getID();
 
                 output.append("<li>");
 
@@ -103,14 +101,37 @@ public class TodoListView {
     // (params allow previous params to be apart of the page)
     // ex. if the title is currently hello, update will show:
     // update Title: hello, and then you can edit that
-    public static String getUpdatePageHtml(int id, String title) {
+    public static String getUpdatePageHtml(Task t) {
+        int id = t.getID();
+        String title = t.getTitle();
         StringBuffer output = new StringBuffer();
         output.append(HTML_UPDATE_TASK_HEADER);
         output.append("</br>");
         output.append(String.format(HTML_UPDATE_TASK_FORM, id, title));
+        output.append(getUpdatedTaskStatusHtml(t));
+        output.append(HTML_UPDATE_BUTTONS);
         output.append(HTML_END);
 
         return output.toString();
     }
 
+    public static String getUpdatedTaskStatusHtml(Task t){
+        String output = "<label><input type=\"radio\" name=\"status\" value=\"NOT_STARTED\"";
+        if (t.getStatus() == Task.Status.NOT_STARTED){
+            output += " checked";
+        }
+        output += "> Not Started</label><br>";
+        output += "<label><input type=\"radio\" name=\"status\" value=\"IN_PROGRESS\"";
+        if (t.getStatus() == Task.Status.IN_PROGRESS){
+            output += " checked";
+        }
+        output += "> In Progress</label><br>";
+        output += "<label><input type=\"radio\" name=\"status\" value=\"COMPLETED\"";
+        if (t.getStatus() == Task.Status.COMPLETED){
+            output += " checked";
+        }
+        output += "> Completed</label><br>";
+
+        return output;
+    }
 }

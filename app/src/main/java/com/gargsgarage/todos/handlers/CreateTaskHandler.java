@@ -3,7 +3,7 @@ package com.gargsgarage.todos.handlers;
 import java.io.IOException;
 import java.util.Map;
 
-import com.gargsgarage.todos.model.TODOList;
+import com.gargsgarage.todos.model.TodoDB;
 import com.gargsgarage.todos.model.Task;
 import com.gargsgarage.todos.utils.RequestUtils;
 import com.gargsgarage.todos.view.TodoListView;
@@ -16,12 +16,12 @@ public class CreateTaskHandler implements HttpHandler {
     /**
      *
      */
-    private final TODOList todos;
+    private final TodoDB todos;
 
     /**
      * @param todos
      */
-    public CreateTaskHandler(TODOList todos) {
+    public CreateTaskHandler(TodoDB todos) {
         this.todos = todos;
     }
 

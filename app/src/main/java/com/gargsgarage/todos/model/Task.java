@@ -4,31 +4,58 @@ public class Task {
     private String title;
     private String description;
     private Status status;
+    private int id;
+    private static int previousID = 1;
     public enum Status{
         NOT_STARTED,
         IN_PROGRESS,
         COMPLETED;
     }
     
+    public Task(int id, String title, String status){
+        this.id = id;
+        previousID = id;
+        this.title = title;
+        if (status == null) {
+            this.status = Status.NOT_STARTED;
+        } else{
+            for(Status s: Status.values()){
+                if(status != null && s.toString().equals(status)){
+                    this.status = s;
+                    break;
+                }
+            }    
+        }
+    }
 
-    public Task(String title, String description, Status status){
+    public Task(String title, String description, Status status, int id){
         this.title = title;
         this.description = description;
         this.status = status;
+        this.id = id;
+        previousID = id;
     }
 
     public Task(String title, Status status){
         this.title = title;
         this.status = status;
+        id = previousID + 1;
     }
 
-    public Task(String title){
+    public Task(String title, int id){
         this.title = title;
         status = Status.NOT_STARTED;
+        this.id = id;
+        previousID = id;
+
     }
 
     public String getTitle(){
         return title;
+    }
+
+    public int getID(){
+        return id;
     }
 
     public String getDescription(){
