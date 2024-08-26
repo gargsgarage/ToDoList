@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TodoDB {
-    private static final String URL = "jdbc:postgresql://localhost:5432/TODOLIST";
-    private static final String USER = "shivamgarg";
-    private static final String PASSWORD = "";
+    private static final String URL = "jdbc:postgresql://localhost:5432/todolist";
+    private static final String USER = "postgres";
+    private static final String PASSWORD = "postgres";
 
     private Connection con;
 
@@ -41,12 +41,14 @@ public class TodoDB {
     public void addTask(Task task){
         String taskName = task.getTitle();
         String status = task.getStatus().toString();
+        int userID = task.getUserID();
         
-        String query = "INSERT INTO tasks (task_name, status) VALUES (?, ?)";
+        String query = "INSERT INTO tasks (task_name, status, user_id) VALUES (?, ?, ?)";
 
         try(PreparedStatement statement = con.prepareStatement(query)){
             statement.setString(1, taskName);
             statement.setString(2, status);
+            statement.setInt(3, userID);
             statement.executeUpdate();
         } catch(SQLException e){
             e.printStackTrace();
@@ -104,14 +106,15 @@ public class TodoDB {
     }
 
     public Task getTask(String taskName){
-        String query = "SELECT id, status FROM tasks WHERE task_name = ?";
+        String query = "SELECT id, status, user_id FROM tasks WHERE task_name = ?";
         try(PreparedStatement statement = con.prepareStatement(query)){
             statement.setString(1, taskName);
             try(ResultSet rs = statement.executeQuery()){
                 if (rs.next()) {
                     int id = rs.getInt("id");
                     String status = rs.getString("status");
-                    return new Task(id, taskName, status);
+                    int userID = rs.getInt("user_id");
+                    return new Task(id, taskName, status, userID);
                 }
             }
         } catch (SQLException e){
@@ -121,14 +124,15 @@ public class TodoDB {
     }
 
     public Task getTask(int id){
-        String query = "SELECT task_name, status FROM tasks WHERE id = ?";
+        String query = "SELECT task_name, status, user_id FROM tasks WHERE id = ?";
         try(PreparedStatement statement = con.prepareStatement(query)){
             statement.setInt(1, id);
             try(ResultSet rs = statement.executeQuery()){
                 if (rs.next()) {
                     String taskName = rs.getString("task_name");
                     String status = rs.getString("status");
-                    return new Task(id, taskName, status);
+                    int userID = rs.getInt("user_id");
+                    return new Task(id, taskName, status, userID);
                 }
             }
         } catch (SQLException e){
@@ -147,7 +151,30 @@ public class TodoDB {
                     String taskName = rs.getString("task_name");
                     String status = rs.getString("status");
                     int id = rs.getInt("id");
-                    Task task = new Task(id, taskName, status);
+                    int userID = rs.getInt("user_id");
+                    Task task = new Task(id, taskName, status, userID);
+                    tasks.add(task);
+                }
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return tasks;
+    }
+
+    public List<Task> getUsersTasks(User user){
+        int userID = user.getID();
+        String query = "SELECT * from tasks WHERE user_id = ? ORDER BY id";
+        List<Task> tasks = new ArrayList<Task>();
+        
+        try(PreparedStatement statement = con.prepareStatement(query)){
+            statement.setInt(1, userID);
+            try(ResultSet rs = statement.executeQuery()){
+                while(rs.next()){
+                    String taskName = rs.getString("task_name");
+                    String status = rs.getString("status");
+                    int id = rs.getInt("id");
+                    Task task = new Task(id, taskName, status, userID);
                     tasks.add(task);
                 }
             }

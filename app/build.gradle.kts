@@ -9,6 +9,8 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+    
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 repositories {
@@ -20,7 +22,11 @@ dependencies {
     // This dependency is used by the application.
     implementation(libs.guava)
 
+    //postgresql dependecy
     implementation("org.postgresql:postgresql:42.7.3")
+
+    //JBCrypt dependency
+    implementation("org.mindrot:jbcrypt:0.4")
 }
 
 testing {
@@ -36,11 +42,22 @@ testing {
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(22)
+        languageVersion = JavaLanguageVersion.of(11)
     }
 }
 
 application {
     // Define the main class for the application.
-    mainClass = "com.gargsgarage.todos.TODOServer"
+    mainClass.set("com.gargsgarage.todos.TODOServer")
+}
+
+// Configure the Shadow JAR task
+tasks.shadowJar {
+    archiveBaseName.set("todoserver")
+    archiveClassifier.set("")
+    archiveVersion.set("1.0")
+}
+
+tasks.build {
+    dependsOn(tasks.shadowJar)
 }

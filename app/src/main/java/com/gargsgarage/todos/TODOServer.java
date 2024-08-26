@@ -5,16 +5,23 @@ package com.gargsgarage.todos;
 
 import java.net.InetSocketAddress;
 import com.gargsgarage.todos.handlers.CreateTaskHandler;
+import com.gargsgarage.todos.handlers.LandingPageHandler;
+import com.gargsgarage.todos.handlers.LoginHandler;
+import com.gargsgarage.todos.handlers.RegisterAcctHandler;
 import com.gargsgarage.todos.handlers.UpdateTaskHandler;
 import com.gargsgarage.todos.model.TodoDB;
+import com.gargsgarage.todos.model.UsersDB;
 import com.sun.net.httpserver.HttpServer;
 
 public class TODOServer {
 
     TodoDB todos;
+    UsersDB users;
 
     public TODOServer() {
         todos = new TodoDB();
+        users = new UsersDB();
+
     }
 
     public static void main(String[] args) {
@@ -31,10 +38,18 @@ public class TODOServer {
             HttpServer httpServer = HttpServer.create();
             // set up a path to handle requests and call the handler
             // associated with it to generate the response
-            httpServer.createContext("/todos", new CreateTaskHandler(todos));
+            httpServer.createContext("/todos", new CreateTaskHandler(todos, users));
             httpServer.createContext("/todos/update", new UpdateTaskHandler(todos));
+            httpServer.createContext("/todos/login", new LoginHandler(todos, users));
+            httpServer.createContext("/todos/register", new RegisterAcctHandler(todos, users));
+            httpServer.createContext("/", new LandingPageHandler());
+
+
+
             // tell the server to see what port to listen to
-            httpServer.bind(new InetSocketAddress(8000), 0);
+            httpServer.bind(new InetSocketAddress("0.0.0.0", 8080), 0);
+
+            httpServer.setExecutor(null); // creates a default executor
 
             httpServer.start();
         } catch (Exception e) {

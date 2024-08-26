@@ -6,13 +6,14 @@ public class Task {
     private Status status;
     private int id;
     private static int previousID = 1;
+    private int userID;
     public enum Status{
         NOT_STARTED,
         IN_PROGRESS,
         COMPLETED;
     }
     
-    public Task(int id, String title, String status){
+    public Task(int id, String title, String status, int userID){
         this.id = id;
         previousID = id;
         this.title = title;
@@ -28,28 +29,18 @@ public class Task {
         }
     }
 
-    public Task(String title, String description, Status status, int id){
-        this.title = title;
-        this.description = description;
-        this.status = status;
-        this.id = id;
-        previousID = id;
-    }
-
-    public Task(String title, Status status){
+    public Task(String title, Status status, int userID){
         this.title = title;
         this.status = status;
         id = previousID + 1;
-    }
-
-    public Task(String title, int id){
-        this.title = title;
-        status = Status.NOT_STARTED;
-        this.id = id;
         previousID = id;
-
+        this.userID = userID;
     }
 
+    public int getUserID(){
+        return userID;
+    }
+    
     public String getTitle(){
         return title;
     }
